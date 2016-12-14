@@ -140,7 +140,7 @@ The command line option that overrides this attribute is `-b`.
 
 Some languages and frameworks require that you provide a custom command to start an application. Refer to the [buildpack](../../buildpacks/index.html) documentation to determine if you need to provide a custom start command.
 
-You can provide the custom start command in your application manifest or on the command line. See <a href="./app-startup.html">About Starting Applications</a> for  information on how `cf push` determines its default start command. 
+You can provide the custom start command in your application manifest or on the command line. See <a href="./start-restart-restage.html">Starting, Restarting, and Restaging Applications</a> for more information on how Cloud Foundry determines its default start command. 
 
 To specify the custom start command in your application manifest, add it in the `command: START-COMMAND` format as the following example shows:
 
@@ -150,7 +150,7 @@ To specify the custom start command in your application manifest, add it in the 
   command: bundle exec rake VERBOSE=true
 </pre>
 
-The start command you specify becomes the default for your application. To return to using the original default start command set by your buildpack, you must explicitly set the the attribute to `null` as follows: 
+The start command you specify becomes the default for your application. To return to using the original default start command set by your buildpack, you must explicitly set the attribute to `null` as follows: 
 
 
 <pre>
@@ -165,14 +165,14 @@ On the command line, use the `-c` option to specify the custom start command as 
 $ cf push my-app -c "bundle exec rake VERBOSE=true"
 </pre>
 
-<p class="note"><strong>Note</strong>: The <code>-c</code> option with a value of 'null' forces <code>cf push</code> to use the buildpack start command. See <a href="./app-startup.html#revert">Forcing cf push to use the Buildpack Start Command</a> for more information.</p>
+<p class="note"><strong>Note</strong>: The <code>-c</code> option with a value of 'null' forces <code>cf push</code> to use the buildpack start command. See <a href="./start-restart-restage.html#revert">Forcing cf push to use the Buildpack Start Command</a> for more information.</p>
 
 If you override the start command for a Buildpack application, Linux uses
 <code>bash -c YOUR-COMMAND</code> to invoke your application.
 If you override the start command for a Docker application, Linux uses <code>sh -c YOUR-COMMAND</code> to invoke your application.
 Because of this, if you override a start command, you should prefix <code>exec</code> to the final command in your custom composite start command.
 
-An app needs to catch [termination signals](./manifest.html#moving-apps) and clean itself up appropriately. Because of the way that shells manage process trees, the use of custom composite shell commands, particularly those that create child processes using `&`, `&&`, `||`, etc., can prevent your app from receiving signals that are sent to the top level bash process.
+An app needs to catch [termination signals](./prepare-to-deploy.html#moving-apps) and clean itself up appropriately. Because of the way that shells manage process trees, the use of custom composite shell commands, particularly those that create child processes using `&`, `&&`, `||`, etc., can prevent your app from receiving signals that are sent to the top level bash process.
 
 To resolve this issue, you can use `exec` to replace the bash process with your own process. For example:
 
@@ -270,7 +270,7 @@ The command line option that overrides this attribute is `-m`.
 
 ###<a id='health-check-type'></a>The health-check-type attribute ###
 
-Use the `health-check-type` attribute to set the `health_check_type` flag to either `port` or `none`. If you do not provide a `health-check-type` attibute, 
+Use the `health-check-type` attribute to set the `health_check_type` flag to either `port` or `none`. If you do not provide a `health-check-type` attribute, 
 it defaults to `port`.
 
 <pre>
@@ -387,15 +387,19 @@ The command line option that corresponds to this attribute is `--random-route`.
 
 ###<a id='path'></a>The path attribute
 
-You can use the `path` attribute to tell Cloud Foundry where to find your application. This is generally not necessary when you run `cf push` from the directory where an application is located.
+You can use the `path` attribute to tell Cloud Foundry the directory location where it can find your application. 
+
+The directory specified as the `path`, either as an attribute or as a parameter on the command line, becomes the location where the buildpack `Detect` script executes.
+
+The command line option that overrides this attribute is `-p`.
 
 <pre>
 ---
   ...
-  path: path_to_application_bits
+  path: /path/to/application/bits
 </pre>
 
-The command line option that overrides this attribute is `-p`.
+For more information, see the [How cf push Finds the Application](#find-app) topic.
 
 ###<a id='timeout'></a>The timeout attribute ###
 
@@ -462,7 +466,8 @@ While the application is running, you can modify environment variables.
 
 Environment variables interact with manifests in the following ways:
 
-* When you deploy an application for the first time, Cloud Foundry reads the variables described in the environment block of the manifest, and adds them to the environment of the container where the application is deployed.
+* When you deploy an application for the first time, Cloud Foundry reads the variables described in the environment block of the manifest and adds them to 
+the environment of the container where the application is staged, and the environment of the container where the application is deployed.
 
 * When you stop and then restart an application, its environment variables persist.
 
@@ -652,4 +657,4 @@ applications:
    path: ./december/target/december-weather.war
 </pre>
 
-<class='note'><strong>Note</strong>: Inheritance can add an additional level of complexity to manifest creation and maintenance. Comments that precisely explain how the child manifest extends or overrides the descriptions in the parent manifest can alleviate this complexity.</p>
+<p class='note'><strong>Note</strong>: Inheritance can add an additional level of complexity to manifest creation and maintenance. Comments that precisely explain how the child manifest extends or overrides the descriptions in the parent manifest can alleviate this complexity.</p>
